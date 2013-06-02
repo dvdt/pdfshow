@@ -40,9 +40,14 @@ limitations under the License.
     <script type="text/javascript">
           var ChannelConn = {
               connected: false,
-              engaged: false,
+              engaged: true,
+              getCurrentPage: function () {
+                return this.msgs[this.msgs.length - 1].pageNum;
+              },
+              msgs: new Array(),
               initialize: function() {
                   this.presentation_key = '{{ presentation_key }}';
+                  this.client_id = '{{ client_id }}';
                   this.channel = new goog.appengine.Channel('{{ channel_token }}');
                   var socket = this.channel.open();
                   socket.onopen = this.onOpened;
@@ -50,22 +55,42 @@ limitations under the License.
                   socket.onerror = this.onError;
                   socket.onclose = this.onClose;
                   this.socket = socket;
-                  this.connected = true;
-                  this.engaged = true;
-                  // TODO Engage!
-
               },
 
               onOpened: function() {
-//                  window.alert('You are now connected');
+                  // Get the current change and update the view to that page
+                  $.getJSON('/channel', {"p_key": ChannelConn.presentation_key}, function(msg) {
+                      PDFView.page = msg.pageNum;
+                      window.addEventListener('pagechange', function pagechange(evt) {
+                          var page = evt.pageNumber;
+                          if (PDFView.previousPageNumber !== page) {
+                              if (ChannelConn.engaged == true)
+                                ChannelConn.emit_page_change(page);
+                              else {
+                                  if (page == ChannelConn.getCurrentPage())
+                                    ChannelConn.engaged = true;
+                              }
+                          }
+                      }, true)
+
+                  });
+
+                  ChannelConn.connected = true;
               },
 
               onMessage: function(raw_msg) {
                   console.log('page change msg received!');
                   var msg = jQuery.parseJSON(raw_msg.data);
-                  var page = msg.pageNum;
-                  if (ChannelConn.engaged === true && page !== PDFView.page)
-                      PDFView.page = page;
+                  // Insert msg into it's proper (sorted) position
+                  var msgs = ChannelConn.msgs;
+                  msgs.push(msg);
+                  for (var i = msgs.length - 1; msgs[i].timestamp > msg.timestamp; i--) {}
+                  msgs[msgs.length - 1] = msgs[i];
+                  msgs[i] = msg;
+                  var page = msgs[msgs.length - 1].pageNum;
+                  if (ChannelConn.connected === true && ChannelConn.engaged === true && page !== PDFView.page)
+                    ChannelConn.engaged = false;
+                    PDFView.page = page;
               },
 
               onError: function(msg) {
@@ -80,6 +105,7 @@ limitations under the License.
                   if (this.engaged === true) {
                       var path = '/channel?p_key=' + this.presentation_key;
                       path += '&p=' + page;
+                      path += '&client_id=' + this.client_id;
                       var xhr = new XMLHttpRequest();
                       xhr.open('POST', path, true);
                       xhr.send();
@@ -87,14 +113,9 @@ limitations under the License.
               }
           };
 
-          window.addEventListener('pagechange', function pagechange(evt) {
-              var page = evt.pageNumber;
-              if (PDFView.previousPageNumber !== page) {
-                  ChannelConn.emit_page_change(page);
-              }
-          }, true);
+;
 
-          document.addEventListener('DOMContentLoaded', function webViewerLoad(evt) {
+          window.addEventListener('documentload', function webViewerLoad(evt) {
               ChannelConn.initialize();
 //    $('#channelEngage').click(function(evt) {
 //

@@ -1,9 +1,8 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title></title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block title %}Presentation URL{% endblock %}
+{% block htmlbody %}
+<div class="container">
+    Your presentation link is: <a href="{{ presentation_url }}">{{ presentation_url }}</a>.
+</div>
+{% endblock %}

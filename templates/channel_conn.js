@@ -28,7 +28,7 @@ var ChannelConn = {
     },
 
     onError: function(msg) {
-        log(msg);
+        console.log(msg);
     },
 
     onClose: function() {
@@ -45,7 +45,6 @@ var ChannelConn = {
         }
     }
 };
-
 
 window.addEventListener('pagechange', function pagechange(evt) {
     var page = evt.pageNumber;

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+{% block htmlbody %}
+<div class="container">
+    <h1>PDF Show</h1>
+    <p>Interact with PDF documents, in real time, with other people</p>
+    <form action="/presentation" method="post">
+        <fieldset>
+            <legend>Generate Presentation Link</legend>
+            <label>PDF URL</label>
+            <input type="url" name="pdf-url" required placeholder="http:// ...">
+            <span class="help-block">Dropbox > Public > Copy Public Link</span>
+            <button type="submit" class="btn">Get Link</button>
+        </fieldset>
+    </form>
+</div>
+{% endblock %}
