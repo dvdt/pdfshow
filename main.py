@@ -62,7 +62,7 @@ class ChannelHandler(webapp2.RequestHandler):
         presentation_key = self.request.get('p_key')
         presentation = PresentationChannel.get(keys=presentation_key)
         self.response.headers['Content-Type'] = 'application/json'
-        msg = {'pageNum': presentation.page_num}
+        msg = {'pageNum': presentation.page_num, 'timestamp': time.time()}
         self.response.write(json.dumps(msg))
 
     def post(self):
@@ -71,7 +71,7 @@ class ChannelHandler(webapp2.RequestHandler):
         client_id_source = self.request.get('client_id')
         presentation = PresentationChannel.get(keys=presentation_key)
         presentation.page_num = page_num
-
+        presentation.put()
         # Broadcast page change to connected clients
         for client in presentation.channel_client_ids:
             if client != client_id_source:

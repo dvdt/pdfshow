@@ -41,10 +41,20 @@ limitations under the License.
           var ChannelConn = {
               connected: false,
               engaged: true,
+              msgs: new Array(),
+
               getCurrentPage: function () {
                 return this.msgs[this.msgs.length - 1].pageNum;
               },
-              msgs: new Array(),
+
+              addPageChangeMsg: function (msg) {
+                  var msgs = this.msgs;
+                  msgs.push(msg);
+                  for (var i = msgs.length - 1; msgs[i].timestamp > msg.timestamp; i--) {}
+                  msgs[msgs.length - 1] = msgs[i];
+                  msgs[i] = msg;
+              },
+
               initialize: function() {
                   this.presentation_key = '{{ presentation_key }}';
                   this.client_id = '{{ client_id }}';
@@ -60,7 +70,8 @@ limitations under the License.
               onOpened: function() {
                   // Get the current change and update the view to that page
                   $.getJSON('/channel', {"p_key": ChannelConn.presentation_key}, function(msg) {
-                      PDFView.page = msg.pageNum;
+                      ChannelConn.addPageChangeMsg(msg);
+                      PDFView.page = ChannelConn.getCurrentPage();
                       window.addEventListener('pagechange', function pagechange(evt) {
                           var page = evt.pageNumber;
                           if (PDFView.previousPageNumber !== page) {
@@ -82,12 +93,8 @@ limitations under the License.
                   console.log('page change msg received!');
                   var msg = jQuery.parseJSON(raw_msg.data);
                   // Insert msg into it's proper (sorted) position
-                  var msgs = ChannelConn.msgs;
-                  msgs.push(msg);
-                  for (var i = msgs.length - 1; msgs[i].timestamp > msg.timestamp; i--) {}
-                  msgs[msgs.length - 1] = msgs[i];
-                  msgs[i] = msg;
-                  var page = msgs[msgs.length - 1].pageNum;
+                  ChannelConn.addPageChangeMsg(msg);
+                  var page = ChannelConn.getCurrentPage();
                   if (ChannelConn.connected === true && ChannelConn.engaged === true && page !== PDFView.page)
                     ChannelConn.engaged = false;
                     PDFView.page = page;
