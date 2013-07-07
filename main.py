@@ -12,7 +12,7 @@ import json
 import time
 from google.appengine.ext import blobstore
 from google.appengine.ext.webapp import blobstore_handlers
-
+import re
 SERVE_BLOB_URI = '/serve'
 
 JINJA_ENVIRONMENT = jinja2.Environment(
@@ -42,13 +42,14 @@ def render_json(infxn):
 
 class PresentationChannel(db.Model):
     pdf_url = db.LinkProperty()
+    pdf_name = db.StringProperty()
     created_datetime = db.DateTimeProperty(auto_now_add=True)
     page_num = db.IntegerProperty(default=1)
     channel_client_ids = db.StringListProperty()
 
     def url(self):
-        q_string = urllib.urlencode({'p_key': self.key(), 'pdf_url': self.pdf_url})
-        return '/presentation?%s' % q_string
+        q_string = urllib.urlencode({'p_key': self.key()})
+        return '/presenter/%s?%s' % (self.pdf_name, q_string)
 
     # TODO: make this an atomic operation
     def add_channel_client_id(self, client_id):
@@ -96,6 +97,13 @@ class ChannelHandler(webapp2.RequestHandler):
 
 class UploadPresentationHandler(blobstore_handlers.BlobstoreUploadHandler):
     """For uploading pdf presentations"""
+    def _clean_pdf_name(self, file_name):
+        MAX_FILENAME_CHARS = 100
+        clean_file_name = file_name.lower().split('.pdf')[0]
+        clean_file_name = clean_file_name.replace(' ', '-')
+        clean_file_name = re.sub('[^a-zA-Z0-9_-]', '', clean_file_name)
+        return clean_file_name[:MAX_FILENAME_CHARS]
+
     @render_template('presentation_creation.html')
     def post(self):
         upload_file = self.get_uploads("file")
@@ -111,10 +119,10 @@ class UploadPresentationHandler(blobstore_handlers.BlobstoreUploadHandler):
             return None
 
         pdf_url = 'http://%s%s/%s' % (self.request.host, SERVE_BLOB_URI, blob_info.key())
-        presentation = PresentationChannel(pdf_url=pdf_url)
+        pdf_file_name = self._clean_pdf_name(blob_info.filename)
+        presentation = PresentationChannel(pdf_url=pdf_url, pdf_name=pdf_file_name)
         presentation.put()
         return {'presentation_url': 'http://%s%s' % (self.request.host, presentation.url())}
-
 
 class ServePresentationHandler(blobstore_handlers.BlobstoreDownloadHandler):
     """Serves previously uploaded pdf presentations"""
@@ -127,11 +135,14 @@ class ServePresentationHandler(blobstore_handlers.BlobstoreDownloadHandler):
 class PDFPresentationHandler(webapp2.RequestHandler):
     """Serves the presentation room"""
     @render_template('viewer.html')
-    def get(self):
+    def get(self, role=None, pdf_name=None):
+        assert role in ['presenter', 'audience']
         presentation_key = self.request.get('p_key')
+        presentation = PresentationChannel.get(keys=presentation_key)
         token, client_id = self._open_channel(presentation_key)
         logger.info("Created new client connection, token=%s" % token)
-        return {'presentation_key': presentation_key, 'channel_token': token, 'client_id': client_id}
+        return {'role': role, 'pdf_url': presentation.pdf_url, 'presentation_key': presentation_key,
+                'channel_token': token, 'client_id': client_id}
 
     def _open_channel(self, presentation_key):
         presentation = PresentationChannel.get(keys=presentation_key)
@@ -154,8 +165,8 @@ class About(webapp2.RequestHandler):
 app = webapp2.WSGIApplication([
                                   ('/about', About),
                                   ('/upload', UploadPresentationHandler),
-                                  ('%s/([^/]+)?' % SERVE_BLOB_URI, ServePresentationHandler),
                                   ('/', MainHandler),
                                   ('/channel', ChannelHandler),
-                                  ('/presentation', PDFPresentationHandler)
+                                  webapp2.Route('/<role:(presenter)|(audience)>/<pdf_name>', PDFPresentationHandler),
+                                  ('%s/([^/]+)?' % SERVE_BLOB_URI, ServePresentationHandler),
                               ], debug=True)

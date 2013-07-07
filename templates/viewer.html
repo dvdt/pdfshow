@@ -42,6 +42,7 @@ limitations under the License.
               connected: false,
               engaged: true,
               msgs: new Array(),
+              pdf_url: '{{ pdf_url }}',
 
               getCurrentPage: function () {
                 return this.msgs[this.msgs.length - 1].pageNum;
@@ -59,6 +60,7 @@ limitations under the License.
                   this.presentation_key = '{{ presentation_key }}';
                   this.client_id = '{{ client_id }}';
                   this.channel = new goog.appengine.Channel('{{ channel_token }}');
+                  this.role = '{{ role }}';
                   var socket = this.channel.open();
                   socket.onopen = this.onOpened;
                   socket.onmessage = this.onMessage;
@@ -109,7 +111,7 @@ limitations under the License.
                   this.connected = false;
               },
               emit_page_change: function(page) {
-                  if (this.engaged === true) {
+                  if (this.engaged === true && this.role === 'presenter') {
                       var path = '/channel?p_key=' + this.presentation_key;
                       path += '&p=' + page;
                       path += '&client_id=' + this.client_id;
@@ -209,10 +211,10 @@ limitations under the License.
                 <!--    <span data-l10n-id="open_file_label">Open</span> -->
                 <!-- </button> -->
 
-                <button id="onAir" class="toolbarButton onAir
-                   hiddenSmallView" title="On Air" tabindex="13" data-l10n-id="on_air">
-                   <span data-l10n-id="open_file_label">On Air</span>
-                </button>
+                <!--<button id="onAir" class="toolbarButton onAir-->
+                   <!--hiddenSmallView" title="On Air" tabindex="13" data-l10n-id="on_air">-->
+                   <!--<span data-l10n-id="open_file_label">On Air</span>-->
+                <!--</button>-->
                 
                 <button id="print" class="toolbarButton print" title="Print" tabindex="14" data-l10n-id="print">
                   <span data-l10n-id="print_label">Print</span>

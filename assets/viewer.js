@@ -3231,7 +3231,7 @@ document.addEventListener('DOMContentLoaded', function webViewerLoad(evt) {
   PDFView.initialize();
   var params = PDFView.parseQueryString(document.location.search.substring(1));
 
-  var file = params.pdf_url || DEFAULT_URL;
+  var file = ChannelConn.pdf_url || DEFAULT_URL;
 
   if (!window.File || !window.FileReader || !window.FileList || !window.Blob) {
     document.getElementById('openFile').setAttribute('hidden', 'true');
