@@ -4,13 +4,13 @@ import webapp2
 import jinja2
 import os
 import functools
-# import urllib2
 from google.appengine.ext import db
 from google.appengine.api import channel
 import logging; logger = logging.getLogger(__name__)
 import urllib
 import json
 import time
+from google.appengine.ext import blobstore
 
 class PresentationChannel(db.Model):
     pdf_url = db.LinkProperty()
@@ -47,13 +47,9 @@ def render_template(template_name):
 class MainHandler(webapp2.RequestHandler):
     @render_template('index.html')
     def get(self):
-        error = self.request.get('error')
-        return {}
+        upload_url = blobstore.create_upload_url('/upload')
 
-    def post(self):
-        # Create and store a document object
-        # Redirect to link
-        pass
+        return {}
 
 
 class ChannelHandler(webapp2.RequestHandler):
@@ -78,6 +74,7 @@ class ChannelHandler(webapp2.RequestHandler):
                 msg = {'pageNum': page_num, 'timestamp': time.time()}
                 channel.send_message(client, json.dumps(msg))
 
+
 class PDFPresentationHandler(webapp2.RequestHandler):
     @render_template('viewer.html')
     def get(self):
@@ -91,7 +88,7 @@ class PDFPresentationHandler(webapp2.RequestHandler):
         pdf_url = self.request.get('pdf-url')
         presentation = PresentationChannel(pdf_url=pdf_url)
         presentation.put()
-        return {'presentation_url': presentation.url()}
+        return {'presentation_url': 'http://%s%s' % (self.request.host ,presentation.url())}
 
     def _open_channel(self, presentation_key):
         presentation = PresentationChannel.get(keys=presentation_key)
@@ -105,7 +102,13 @@ class PDFPresentationHandler(webapp2.RequestHandler):
         """
         return str(uuid.uuid4())
 
+
+class About(webapp2.RequestHandler):
+    @render_template('about.html')
+    def get(self):
+        return {}
 app = webapp2.WSGIApplication([
+                                  ('/about', About),
                                   ('/', MainHandler),
                                   ('/channel', ChannelHandler),
                                   ('/presentation', PDFPresentationHandler)
