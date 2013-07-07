@@ -1,18 +1,71 @@
 {% extends "base.html" %}
-
-{% block title %}Home{% endblock %}
+{% block title %}Index{% endblock %}
 {% block htmlbody %}
-<div class="container">
-    <h1>PDF Show</h1>
-    <p>Interact with PDF documents, in real time, with other people</p>
-    <form action="/presentation" method="post">
-        <fieldset>
-            <legend>Generate Presentation Link</legend>
-            <label>PDF URL</label>
-            <input type="url" name="pdf-url" required placeholder="http:// ...">
-            <span class="help-block">Dropbox > Public > Copy Public Link</span>
-            <button type="submit" class="btn">Get Link</button>
-        </fieldset>
-    </form>
+<div class="jumbotron">
+    <h1>WebEx Presentations Suck.</h1>
+    <p class="lead">Screensharing takes too long to set up and the video quality is horrible. PDFShow is a snap to use and always looks great.</p>
+    <button type="button" data-toggle="modal" data-target="#gen-presentation-modal" class="btn btn-large btn-success">Try it for free!</button>
+    <p class='lead'><em>It's the best way to present slides over the Internet</em></p>
 </div>
+<div id="gen-presentation-modal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+<form id="gen-pres-form" action="/presentation" method="post">
+
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+        <h3 id="myModalLabel">Generate Presentation Link</h3>
+    </div>
+    <div class="modal-body">
+            <fieldset>
+                <ol>
+                <li>
+                <label>Presentation web address (URL)</label>
+                <input type="url" name="pdf-url" required placeholder="http:// ...">
+                <span class="help-block">Hint: Dropbox > Public > Copy Public Link</span>
+                </li>
+                <li><label>(Optional) Email Address</label>
+                <input type="email" name="email">
+                <span class="help-block">Enter your email to receive the presentation link</span></li>
+                </ol>
+            </fieldset>
+    </div>
+    <div class="modal-footer">
+        <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+        <button type="submit" id="gen-presentation-link" class="btn btn-primary">Get Link</button>
+    </div></form>
+</div>
+<hr>
+<div class="row-fluid marketing">
+    <div class="span6">
+        <h4>Instant, No-brainer Setup</h4>
+        <p>No download required! Just send the presentation link to conference attendees.</p>
+        <h4>Picture Perfect</h4>
+        <p>Unparalleled image quality. No more squinting at blurry charts and text.</p>
+    </div>
+    <div class="span6">
+        <h4>Everyone is on the Same Page</h4>
+        <p>Every computer automatically refreshes to show the current slide. We're all on the same slide.</p>
+        <h4>Free</h4>
+        <p>No cost while PDFShow is in beta.</p>
+    </div>
+</div>{% endblock %}
+<!--<div class="container-narrow">-->
+<!--<h2>The best way to give presentations online</h2>-->
+<!--<p class="lead">Showing presentations through video conferencing tools like WebEx sucks.</p>-->
+<!--<p class="lead">It takes too long to set up and you can never see anything with the poor video quality. PDFshow is a breeze to use and looks great.</p>-->
+<!--<blockquote>-->
+<!--<p class="text-">Before your presentation,</p>-->
+<!--<ol>-->
+<!--<li></li>-->
+<!--</ol>-->
+<!--</blockquote>-->
+<!--</div>-->
+ {% block scripts %}
+ <script>
+     $.ready(function () {
+         $("div").click(function(evt) {
+            alert('wtf');
+            evt.stopPropagation();
+         });
+     });
+ </script>
 {% endblock %}
