@@ -175,6 +175,13 @@ class About(webapp2.RequestHandler):
     def get(self):
         return {}
 
+class Test(webapp2.RequestHandler):
+    @render_template('presentation_creation.html')
+    def get(self):
+                return {'presenter_url': 'http://%s' % ('localhost:9080/presenter/tsao_nigtp_y05_appt_letter_06_14_2013?p_key=V5X5Rm5IRnab4XTu32d%2BYA'),
+                'audience_url': 'http://%s' % ('localhost:9080/audience/tsao_nigtp_y05_appt_letter_06_14_2013?p_key=V5X5Rm5IRnab4XTu32d%2BYA')}
+
+
 app = webapp2.WSGIApplication([
                                   ('/about', About),
                                   ('/upload', UploadPresentationHandler),
@@ -182,4 +189,5 @@ app = webapp2.WSGIApplication([
                                   ('/channel', ChannelHandler),
                                   webapp2.Route('/<role:(presenter)|(audience)>/<pdf_name>', PDFPresentationHandler),
                                   ('%s/([^/]+)?' % SERVE_BLOB_URI, ServePresentationHandler),
-                              ], debug=True)
+                                  # ('/test', Test),
+                              ], debug=False)
