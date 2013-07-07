@@ -19,12 +19,15 @@ JINJA_ENVIRONMENT = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.join(os.path.dirname(__file__), 'templates')),
     extensions=['jinja2.ext.autoescape'])
 
+
 def render_template(template_name):
     def my_decorator(infxn):
         template = JINJA_ENVIRONMENT.get_template(template_name)
         @functools.wraps(infxn)
         def outer(self, *args, **kwargs):
-            return self.response.write(template.render(infxn(self, *args, **kwargs)))
+            result = infxn(self, *args, **kwargs)
+            if result is not None:
+                return self.response.write(template.render(result))
         return outer
     return my_decorator
 
@@ -59,8 +62,13 @@ class MainHandler(webapp2.RequestHandler):
     """Serves the home page"""
     @render_template('index.html')
     def get(self):
-        blob_upload_url = blobstore.create_upload_url('/upload')
-        return {'blob_upload_url': blob_upload_url}
+        t_vals = dict()
+        error = self.request.get('error')
+        if error:
+            t_vals['error'] = error
+        t_vals['blob_upload_url'] = blobstore.create_upload_url('/upload')
+
+        return t_vals
 
 
 class ChannelHandler(webapp2.RequestHandler):
@@ -88,7 +96,7 @@ class ChannelHandler(webapp2.RequestHandler):
 
 class UploadPresentationHandler(blobstore_handlers.BlobstoreUploadHandler):
     """For uploading pdf presentations"""
-    @render_json
+    @render_template('presentation_creation.html')
     def post(self):
         upload_file = self.get_uploads("file")
         blob_info = upload_file[0]
@@ -96,11 +104,13 @@ class UploadPresentationHandler(blobstore_handlers.BlobstoreUploadHandler):
                                                                                     blob_info.content_type, blob_info.size))
         if 'pdf' not in blob_info.content_type.lower():
             blob_info.delete()
-            return {'status': 400,
-                    'error_msg': 'File must be in pdf format'}
+            logger.info("Deleted blob: filename=%s, key=%s, content_type=%s, size=%s" % (blob_info.filename, blob_info.key(),
+                                                                                    blob_info.content_type, blob_info.size))
+
+            self.redirect('/?error=non-pdf')
+            return None
 
         pdf_url = 'http://%s%s/%s' % (self.request.host, SERVE_BLOB_URI, blob_info.key())
-
         presentation = PresentationChannel(pdf_url=pdf_url)
         presentation.put()
         return {'presentation_url': 'http://%s%s' % (self.request.host, presentation.url())}

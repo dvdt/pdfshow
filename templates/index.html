@@ -9,7 +9,6 @@
 </div>
 <div id="gen-presentation-modal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
 <form id="gen-pres-form" action="{{ blob_upload_url }}" method="POST" enctype="multipart/form-data">
-
     <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
         <h3 id="myModalLabel">Upload Presentation</h3>
@@ -17,7 +16,11 @@
     <div class="modal-body">
             <fieldset>
                 <div>
-                <input type="file" name="file" required placeholder="Choose PDF file">
+                {% if error %}
+                    <p class="text-error">File is not .pdf</p>
+                {% endif %}
+                    <label>Pick a .pdf presentation to upload</label>
+                <input type="file" name="file" required autocomplete="off">
                     <dl><dt>Hint: Save your presentation in .pdf format before uploading</dt><dd>File > Save As... > Format (PDF)</dd></dl>
                 </div>
             </fieldset>
@@ -41,6 +44,13 @@
         <h4>Completely Free</h4>
         <p>No cost while PDFShow is in Beta.</p>
     </div>
-</div>{% endblock %}
- {% block scripts %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if error %}
+<script>
+  $("#gen-presentation-modal").modal("show");
+</script>
+{% endif %}
 {% endblock %}
