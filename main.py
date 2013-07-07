@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import base64
 import uuid
 import webapp2
 import jinja2
@@ -41,15 +42,20 @@ def render_json(infxn):
 
 
 class PresentationChannel(db.Model):
+
     pdf_url = db.LinkProperty()
     pdf_name = db.StringProperty()
     created_datetime = db.DateTimeProperty(auto_now_add=True)
     page_num = db.IntegerProperty(default=1)
     channel_client_ids = db.StringListProperty()
 
-    def url(self):
-        q_string = urllib.urlencode({'p_key': self.key()})
+    def presenter_url(self):
+        q_string = urllib.urlencode({'p_key': self.key().name()})
         return '/presenter/%s?%s' % (self.pdf_name, q_string)
+
+    def audience_url(self):
+        q_string = urllib.urlencode({'p_key': self.key().name()})
+        return '/audience/%s?%s' % (self.pdf_name, q_string)
 
     # TODO: make this an atomic operation
     def add_channel_client_id(self, client_id):
@@ -71,6 +77,9 @@ class MainHandler(webapp2.RequestHandler):
 
         return t_vals
 
+def presentation_from_key(p_key):
+    presentation = PresentationChannel.get_by_key_name(key_names=p_key)
+    return presentation
 
 class ChannelHandler(webapp2.RequestHandler):
     """Maintains HTTP Push aspect of presentations"""
@@ -78,14 +87,16 @@ class ChannelHandler(webapp2.RequestHandler):
     def get(self):
         """Returns current state of channel"""
         presentation_key = self.request.get('p_key')
-        presentation = PresentationChannel.get(keys=presentation_key)
+        presentation = presentation_from_key(presentation_key)
         return {'pageNum': presentation.page_num, 'timestamp': time.time()}
 
     def post(self):
-        presentation_key = self.request.get('p_key')
+
         page_num = int(self.request.get('p'))
         client_id_source = self.request.get('client_id')
-        presentation = PresentationChannel.get(keys=presentation_key)
+
+        presentation_key = self.request.get('p_key')
+        presentation = presentation_from_key(presentation_key)
         presentation.page_num = page_num
         presentation.put()
         # Broadcast page change to connected clients
@@ -120,9 +131,12 @@ class UploadPresentationHandler(blobstore_handlers.BlobstoreUploadHandler):
 
         pdf_url = 'http://%s%s/%s' % (self.request.host, SERVE_BLOB_URI, blob_info.key())
         pdf_file_name = self._clean_pdf_name(blob_info.filename)
-        presentation = PresentationChannel(pdf_url=pdf_url, pdf_name=pdf_file_name)
+        key_name = unicode(base64.b64encode(uuid.uuid4().bytes).rstrip('='))
+        presentation = PresentationChannel(key_name=key_name, pdf_url=pdf_url, pdf_name=pdf_file_name)
         presentation.put()
-        return {'presentation_url': 'http://%s%s' % (self.request.host, presentation.url())}
+        return {'presenter_url': 'http://%s%s' % (self.request.host, presentation.presenter_url()),
+                'audience_url': 'http://%s%s' % (self.request.host, presentation.audience_url())}
+
 
 class ServePresentationHandler(blobstore_handlers.BlobstoreDownloadHandler):
     """Serves previously uploaded pdf presentations"""
@@ -138,14 +152,13 @@ class PDFPresentationHandler(webapp2.RequestHandler):
     def get(self, role=None, pdf_name=None):
         assert role in ['presenter', 'audience']
         presentation_key = self.request.get('p_key')
-        presentation = PresentationChannel.get(keys=presentation_key)
-        token, client_id = self._open_channel(presentation_key)
+        presentation = presentation_from_key(presentation_key)
+        token, client_id = self._open_channel(presentation)
         logger.info("Created new client connection, token=%s" % token)
         return {'role': role, 'pdf_url': presentation.pdf_url, 'presentation_key': presentation_key,
                 'channel_token': token, 'client_id': client_id}
 
-    def _open_channel(self, presentation_key):
-        presentation = PresentationChannel.get(keys=presentation_key)
+    def _open_channel(self, presentation):
         client_id = self._get_client_id()
         presentation.add_channel_client_id(client_id)
         token = channel.create_channel(client_id)
