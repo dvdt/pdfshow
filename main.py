@@ -11,6 +11,31 @@ import urllib
 import json
 import time
 from google.appengine.ext import blobstore
+from google.appengine.ext.webapp import blobstore_handlers
+
+SERVE_BLOB_URI = '/serve'
+
+JINJA_ENVIRONMENT = jinja2.Environment(
+    loader=jinja2.FileSystemLoader(os.path.join(os.path.dirname(__file__), 'templates')),
+    extensions=['jinja2.ext.autoescape'])
+
+def render_template(template_name):
+    def my_decorator(infxn):
+        template = JINJA_ENVIRONMENT.get_template(template_name)
+        @functools.wraps(infxn)
+        def outer(self, *args, **kwargs):
+            return self.response.write(template.render(infxn(self, *args, **kwargs)))
+        return outer
+    return my_decorator
+
+
+def render_json(infxn):
+    def outer(self, *args, **kwargs):
+        self.response.headers['Content-Type'] = 'application/json'
+        json_dict = infxn(self, *args, **kwargs)
+        self.response.write(json.dumps(json_dict))
+    return outer
+
 
 class PresentationChannel(db.Model):
     pdf_url = db.LinkProperty()
@@ -29,37 +54,23 @@ class PresentationChannel(db.Model):
             self.channel_client_ids.append(client_id)
         self.put()
 
-JINJA_ENVIRONMENT = jinja2.Environment(
-    loader=jinja2.FileSystemLoader(os.path.join(os.path.dirname(__file__), 'templates')),
-    extensions=['jinja2.ext.autoescape'])
-
-
-def render_template(template_name):
-    def my_decorator(infxn):
-        template = JINJA_ENVIRONMENT.get_template(template_name)
-        @functools.wraps(infxn)
-        def outer(self, *args, **kwargs):
-            return self.response.write(template.render(infxn(self, *args, **kwargs)))
-        return outer
-    return my_decorator
-
 
 class MainHandler(webapp2.RequestHandler):
+    """Serves the home page"""
     @render_template('index.html')
     def get(self):
-        upload_url = blobstore.create_upload_url('/upload')
-
-        return {}
+        blob_upload_url = blobstore.create_upload_url('/upload')
+        return {'blob_upload_url': blob_upload_url}
 
 
 class ChannelHandler(webapp2.RequestHandler):
+    """Maintains HTTP Push aspect of presentations"""
+    @render_json
     def get(self):
         """Returns current state of channel"""
         presentation_key = self.request.get('p_key')
         presentation = PresentationChannel.get(keys=presentation_key)
-        self.response.headers['Content-Type'] = 'application/json'
-        msg = {'pageNum': presentation.page_num, 'timestamp': time.time()}
-        self.response.write(json.dumps(msg))
+        return {'pageNum': presentation.page_num, 'timestamp': time.time()}
 
     def post(self):
         presentation_key = self.request.get('p_key')
@@ -75,20 +86,42 @@ class ChannelHandler(webapp2.RequestHandler):
                 channel.send_message(client, json.dumps(msg))
 
 
+class UploadPresentationHandler(blobstore_handlers.BlobstoreUploadHandler):
+    """For uploading pdf presentations"""
+    @render_json
+    def post(self):
+        upload_file = self.get_uploads("file")
+        blob_info = upload_file[0]
+        logger.info("Stored blob: filename=%s, key=%s, content_type=%s, size=%s" % (blob_info.filename, blob_info.key(),
+                                                                                    blob_info.content_type, blob_info.size))
+        if 'pdf' not in blob_info.content_type.lower():
+            blob_info.delete()
+            return {'status': 400,
+                    'error_msg': 'File must be in pdf format'}
+
+        pdf_url = 'http://%s%s/%s' % (self.request.host, SERVE_BLOB_URI, blob_info.key())
+
+        presentation = PresentationChannel(pdf_url=pdf_url)
+        presentation.put()
+        return {'presentation_url': 'http://%s%s' % (self.request.host, presentation.url())}
+
+
+class ServePresentationHandler(blobstore_handlers.BlobstoreDownloadHandler):
+    """Serves previously uploaded pdf presentations"""
+    def get(self, resource):
+        resource = str(urllib.unquote(resource))
+        blob_info = blobstore.BlobInfo.get(resource)
+        self.send_blob(blob_info)
+
+
 class PDFPresentationHandler(webapp2.RequestHandler):
+    """Serves the presentation room"""
     @render_template('viewer.html')
     def get(self):
         presentation_key = self.request.get('p_key')
         token, client_id = self._open_channel(presentation_key)
         logger.info("Created new client connection, token=%s" % token)
         return {'presentation_key': presentation_key, 'channel_token': token, 'client_id': client_id}
-
-    @render_template('presentation_creation.html')
-    def post(self):
-        pdf_url = self.request.get('pdf-url')
-        presentation = PresentationChannel(pdf_url=pdf_url)
-        presentation.put()
-        return {'presentation_url': 'http://%s%s' % (self.request.host ,presentation.url())}
 
     def _open_channel(self, presentation_key):
         presentation = PresentationChannel.get(keys=presentation_key)
@@ -107,8 +140,11 @@ class About(webapp2.RequestHandler):
     @render_template('about.html')
     def get(self):
         return {}
+
 app = webapp2.WSGIApplication([
                                   ('/about', About),
+                                  ('/upload', UploadPresentationHandler),
+                                  ('%s/([^/]+)?' % SERVE_BLOB_URI, ServePresentationHandler),
                                   ('/', MainHandler),
                                   ('/channel', ChannelHandler),
                                   ('/presentation', PDFPresentationHandler)

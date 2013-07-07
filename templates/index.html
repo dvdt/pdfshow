@@ -4,33 +4,27 @@
 <div class="jumbotron">
     <h1>WebEx Presentations Suck.</h1>
     <p class="lead">Screensharing takes too long to set up and the video quality is horrible. PDFShow is a snap to use and always looks great.</p>
-    <button type="button" data-toggle="modal" data-target="#gen-presentation-modal" class="btn btn-large btn-success">Try it for free!</button>
+    <button type="button" data-toggle="modal" data-target="#gen-presentation-modal" class="btn btn-large btn-success">Try it for Free !</button>
     <p class='lead'><em>It's the best way to present slides over the Internet</em></p>
 </div>
 <div id="gen-presentation-modal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-<form id="gen-pres-form" action="/presentation" method="post">
+<form id="gen-pres-form" action="{{ blob_upload_url }}" method="POST" enctype="multipart/form-data">
 
     <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-        <h3 id="myModalLabel">Generate Presentation Link</h3>
+        <h3 id="myModalLabel">Upload Presentation</h3>
     </div>
     <div class="modal-body">
             <fieldset>
-                <ol>
-                <li>
-                <label>Presentation web address (URL)</label>
-                <input type="url" name="pdf-url" required placeholder="http:// ...">
-                <span class="help-block">Hint: Dropbox > Public > Copy Public Link</span>
-                </li>
-                <li><label>(Optional) Email Address</label>
-                <input type="email" name="email">
-                <span class="help-block">Enter your email to receive the presentation link</span></li>
-                </ol>
+                <div>
+                <input type="file" name="file" required placeholder="Choose PDF file">
+                    <dl><dt>Hint: Save your presentation in .pdf format before uploading</dt><dd>File > Save As... > Format (PDF)</dd></dl>
+                </div>
             </fieldset>
     </div>
     <div class="modal-footer">
         <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
-        <button type="submit" id="gen-presentation-link" class="btn btn-primary">Get Link</button>
+        <button type="submit" id="gen-presentation-link" class="btn btn-primary">Upload Presentation</button>
     </div></form>
 </div>
 <hr>
@@ -44,28 +38,9 @@
     <div class="span6">
         <h4>Everyone is on the Same Page</h4>
         <p>Every computer automatically refreshes to show the current slide. We're all on the same slide.</p>
-        <h4>Free</h4>
-        <p>No cost while PDFShow is in beta.</p>
+        <h4>Completely Free</h4>
+        <p>No cost while PDFShow is in Beta.</p>
     </div>
 </div>{% endblock %}
-<!--<div class="container-narrow">-->
-<!--<h2>The best way to give presentations online</h2>-->
-<!--<p class="lead">Showing presentations through video conferencing tools like WebEx sucks.</p>-->
-<!--<p class="lead">It takes too long to set up and you can never see anything with the poor video quality. PDFshow is a breeze to use and looks great.</p>-->
-<!--<blockquote>-->
-<!--<p class="text-">Before your presentation,</p>-->
-<!--<ol>-->
-<!--<li></li>-->
-<!--</ol>-->
-<!--</blockquote>-->
-<!--</div>-->
  {% block scripts %}
- <script>
-     $.ready(function () {
-         $("div").click(function(evt) {
-            alert('wtf');
-            evt.stopPropagation();
-         });
-     });
- </script>
 {% endblock %}
