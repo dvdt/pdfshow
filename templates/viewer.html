@@ -38,6 +38,8 @@ limitations under the License.
     <script type="text/javascript" src="/assets/viewer.js"></script>
   <script type="text/javascript" src="/_ah/channel/jsapi"></script>
     <script type="text/javascript">
+        // Do not allow find, text highlight
+        PDFJS.disableTextLayer = true;
           var ChannelConn = {
               connected: false,
               engaged: true,
@@ -71,8 +73,8 @@ limitations under the License.
 
               onOpened: function() {
                   // Get the current change and update the view to that page
-                  $.getJSON('/channel', {"p_key": ChannelConn.presentation_key}, function(msg) {
-                      ChannelConn.addPageChangeMsg(msg);
+                  $.getJSON('/channel/page', {"p_key": ChannelConn.presentation_key}, function(msg) {
+                      ChannelConn.addPageChangeMsg(msg); // update page stack
                       PDFView.page = ChannelConn.getCurrentPage();
                       window.addEventListener('pagechange', function pagechange(evt) {
                           var page = evt.pageNumber;
@@ -111,6 +113,16 @@ limitations under the License.
                   this.connected = false;
               },
               emit_page_change: function(page) {
+                  if (this.engaged === true && this.role === 'presenter') {
+                      var path = '/channel/page?p_key=' + this.presentation_key;
+                      path += '&p=' + page;
+                      path += '&client_id=' + this.client_id;
+                      var xhr = new XMLHttpRequest();
+                      xhr.open('POST', path, true);
+                      xhr.send();
+                  }
+              },
+              laserOn: function(div, viewport) {
                   if (this.engaged === true && this.role === 'presenter') {
                       var path = '/channel?p_key=' + this.presentation_key;
                       path += '&p=' + page;

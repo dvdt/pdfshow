@@ -84,25 +84,31 @@ def presentation_from_key(p_key):
 class ChannelHandler(webapp2.RequestHandler):
     """Maintains HTTP Push aspect of presentations"""
     @render_json
-    def get(self):
+    def get(self, action):
         """Returns current state of channel"""
-        presentation_key = self.request.get('p_key')
-        presentation = presentation_from_key(presentation_key)
-        return {'pageNum': presentation.page_num, 'timestamp': time.time()}
+        if action == 'page':
+            presentation_key = self.request.get('p_key')
+            presentation = presentation_from_key(presentation_key)
+            return {'pageNum': presentation.page_num, 'timestamp': time.time()}
 
-    def post(self):
+    def post(self, action):
+        if action == 'page':
+            page_num = int(self.request.get('p'))
+            client_id_source = self.request.get('client_id')
 
-        page_num = int(self.request.get('p'))
-        client_id_source = self.request.get('client_id')
+            presentation_key = self.request.get('p_key')
+            presentation = presentation_from_key(presentation_key)
+            presentation.page_num = page_num
+            presentation.put()
+            msg = {'pageNum': page_num, 'timestamp': time.time()}
+        elif action == 'laser-on':
+            pass
+        elif action == 'laser-off':
+            pass
 
-        presentation_key = self.request.get('p_key')
-        presentation = presentation_from_key(presentation_key)
-        presentation.page_num = page_num
-        presentation.put()
         # Broadcast page change to connected clients
         for client in presentation.channel_client_ids:
             if client != client_id_source:
-                msg = {'pageNum': page_num, 'timestamp': time.time()}
                 channel.send_message(client, json.dumps(msg))
 
 
@@ -186,7 +192,7 @@ app = webapp2.WSGIApplication([
                                   ('/about', About),
                                   ('/upload', UploadPresentationHandler),
                                   ('/', MainHandler),
-                                  ('/channel', ChannelHandler),
+                                  webapp2.Route('/channel/<action:(page)|(laser_on)|(laser_off)>', ChannelHandler),
                                   webapp2.Route('/<role:(presenter)|(audience)>/<pdf_name>', PDFPresentationHandler),
                                   ('%s/([^/]+)?' % SERVE_BLOB_URI, ServePresentationHandler),
                                   # ('/test', Test),
