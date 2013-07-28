@@ -105,9 +105,8 @@ class ChannelHandler(webapp2.RequestHandler):
         elif action == 'laser_on':
             x = self.request.get('x')
             y = self.request.get('y')
-            page_div_id = self.request.get('page_div_id')
-            page_id = page_div_id[-1]
-            msg = {'type': 'laser_on', 'x': x, 'y': y, 'page_div_id': page_div_id, 'pageId': page_id}
+            page_id = self.request.get('page_id')
+            msg = {'type': 'laser_on', 'x': x, 'y': y, 'page_div_id': 'laserLayer%s' % page_id, 'pageId': page_id}
         elif action == 'laser_off':
             msg = {'type': 'laser_off'}
 

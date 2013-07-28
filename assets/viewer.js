@@ -2472,7 +2472,8 @@ var PageView = function pageView(container, id, scale,
 
     /* Add a live annotation layer for the laser pointer */
     var liveAnnotationDiv = document.createElement('div');
-    liveAnnotationDiv.id= 'laserLayer' + this.id;
+    liveAnnotationDiv.id = 'laserLayer' + this.id;
+    liveAnnotationDiv.setAttribute('data-page-num', this.id);
     liveAnnotationDiv.className = 'textLayer';
     liveAnnotationDiv.style.width = canvas.width + 'px';
     liveAnnotationDiv.style.height = canvas.height + 'px';

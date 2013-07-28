@@ -164,7 +164,7 @@ limitations under the License.
                         var path = '/channel/laser_on?p_key=' + ChannelConn.presentation_key;
                         path += '&x=' + pdf_x_y[0];
                         path += '&y=' + pdf_x_y[1];
-                        path += '&page_div_id=' + $(div).attr("id");
+                        path += '&page_id=' + $(div).attr("data-page-num");
                         path += '&client_id=' + ChannelConn.client_id;
                         var xhr = new XMLHttpRequest();
                         xhr.open('POST', path, true);
