@@ -2283,6 +2283,10 @@ var PageView = function pageView(container, id, scale,
     enumerable: true
   });
 
+  function setupLiveAnnotations(div, pdfPage, viewport) {
+      ChannelConn.setupLaser(div, viewport);
+  }
+
   function setupAnnotations(annotationsDiv, pdfPage, viewport) {
 
     function bindLink(link, dest) {
@@ -2466,7 +2470,18 @@ var PageView = function pageView(container, id, scale,
     var textLayer = this.textLayer =
           textLayerDiv ? new TextLayerBuilder(textLayerDiv, this.id - 1) : null;
 
-    if (outputScale.scaled) {
+    /* Add a live annotation layer for the laser pointer */
+    var liveAnnotationDiv = document.createElement('div');
+    liveAnnotationDiv.id= 'laserLayer' + this.id;
+    liveAnnotationDiv.className = 'textLayer';
+    liveAnnotationDiv.style.width = canvas.width + 'px';
+    liveAnnotationDiv.style.height = canvas.height + 'px';
+    if (ChannelConn.role === 'presenter') {
+      liveAnnotationDiv.style.cursor = 'crosshair';
+    }
+    div.appendChild(liveAnnotationDiv);
+
+      if (outputScale.scaled) {
       var cssScale = 'scale(' + (1 / outputScale.sx) + ', ' +
                                 (1 / outputScale.sy) + ')';
       CustomStyle.setProp('transform' , canvas, cssScale);
@@ -2474,6 +2489,10 @@ var PageView = function pageView(container, id, scale,
       if (textLayerDiv) {
         CustomStyle.setProp('transform' , textLayerDiv, cssScale);
         CustomStyle.setProp('transformOrigin' , textLayerDiv, '0% 0%');
+      }
+      if (liveAnnotationDiv) {
+        CustomStyle.setProp('transform' , liveAnnotationDiv, cssScale);
+        CustomStyle.setProp('transformOrigin' , liveAnnotationDiv, '0% 0%');
       }
     }
 
@@ -2561,6 +2580,7 @@ var PageView = function pageView(container, id, scale,
       );
     }
 
+    setupLiveAnnotations(liveAnnotationDiv, pdfPage, this.viewport);
     setupAnnotations(div, pdfPage, this.viewport);
     div.setAttribute('data-loaded', true);
   };

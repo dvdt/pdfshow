@@ -92,19 +92,24 @@ class ChannelHandler(webapp2.RequestHandler):
             return {'pageNum': presentation.page_num, 'timestamp': time.time()}
 
     def post(self, action):
+
+        client_id_source = self.request.get('client_id')
+        presentation_key = self.request.get('p_key')
+        presentation = presentation_from_key(presentation_key)
+
         if action == 'page':
             page_num = int(self.request.get('p'))
-            client_id_source = self.request.get('client_id')
-
-            presentation_key = self.request.get('p_key')
-            presentation = presentation_from_key(presentation_key)
             presentation.page_num = page_num
             presentation.put()
-            msg = {'pageNum': page_num, 'timestamp': time.time()}
-        elif action == 'laser-on':
-            pass
-        elif action == 'laser-off':
-            pass
+            msg = {'type': 'page', 'pageNum': page_num, 'timestamp': time.time()}
+        elif action == 'laser_on':
+            x = self.request.get('x')
+            y = self.request.get('y')
+            page_div_id = self.request.get('page_div_id')
+            page_id = page_div_id[-1]
+            msg = {'type': 'laser_on', 'x': x, 'y': y, 'page_div_id': page_div_id, 'pageId': page_id}
+        elif action == 'laser_off':
+            msg = {'type': 'laser_off'}
 
         # Broadcast page change to connected clients
         for client in presentation.channel_client_ids:
