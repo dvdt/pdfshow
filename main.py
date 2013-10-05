@@ -14,6 +14,7 @@ import time
 from google.appengine.ext import blobstore
 from google.appengine.ext.webapp import blobstore_handlers
 import re
+
 SERVE_BLOB_URI = '/serve'
 
 JINJA_ENVIRONMENT = jinja2.Environment(
@@ -77,9 +78,14 @@ class MainHandler(webapp2.RequestHandler):
 
         return t_vals
 
-def presentation_from_key(p_key):
+
+def presentation_from_key(raw_p_key):
+    p_key = str(urllib.unquote(raw_p_key))
     presentation = PresentationChannel.get_by_key_name(key_names=p_key)
+    if presentation is None:
+        raise Exception("No presentation found with key_name=%s" % p_key)
     return presentation
+
 
 class ChannelHandler(webapp2.RequestHandler):
     """Maintains HTTP Push aspect of presentations"""
@@ -94,7 +100,7 @@ class ChannelHandler(webapp2.RequestHandler):
     def post(self, action):
 
         client_id_source = self.request.get('client_id')
-        presentation_key = urllib.unquote(self.request.get('p_key'))
+        presentation_key = self.request.get('p_key')
         presentation = presentation_from_key(presentation_key)
 
         if action == 'page':
@@ -134,14 +140,14 @@ class UploadPresentationHandler(blobstore_handlers.BlobstoreUploadHandler):
         if 'pdf' not in blob_info.content_type.lower():
             blob_info.delete()
             logger.info("Deleted blob: filename=%s, key=%s, content_type=%s, size=%s" % (blob_info.filename, blob_info.key(),
-                                                                                    blob_info.content_type, blob_info.size))
+                                                                                         blob_info.content_type, blob_info.size))
 
             self.redirect('/?error=non-pdf')
             return None
 
         pdf_url = 'http://%s%s/%s' % (self.request.host, SERVE_BLOB_URI, blob_info.key())
         pdf_file_name = self._clean_pdf_name(blob_info.filename)
-        key_name = unicode(base64.b64encode(uuid.uuid4().bytes).rstrip('='))
+        key_name = unicode(base64.urlsafe_b64encode(uuid.uuid4().bytes).rstrip('='))
         presentation = PresentationChannel(key_name=key_name, pdf_url=pdf_url, pdf_name=pdf_file_name)
         presentation.put()
         return {'presenter_url': 'http://%s%s' % (self.request.host, presentation.presenter_url()),
@@ -188,16 +194,14 @@ class About(webapp2.RequestHandler):
 class Test(webapp2.RequestHandler):
     @render_template('presentation_creation.html')
     def get(self):
-                return {'presenter_url': 'http://%s' % ('localhost:9080/presenter/tsao_nigtp_y05_appt_letter_06_14_2013?p_key=V5X5Rm5IRnab4XTu32d%2BYA'),
+        return {'presenter_url': 'http://%s' % ('localhost:9080/presenter/tsao_nigtp_y05_appt_letter_06_14_2013?p_key=FeF69oxSTw+2xmuPGjFciw'),
                 'audience_url': 'http://%s' % ('localhost:9080/audience/tsao_nigtp_y05_appt_letter_06_14_2013?p_key=V5X5Rm5IRnab4XTu32d%2BYA')}
 
 
-app = webapp2.WSGIApplication([
-                                  ('/about', About),
-                                  ('/upload', UploadPresentationHandler),
-                                  ('/', MainHandler),
-                                  webapp2.Route('/channel/<action:(page)|(laser_on)|(laser_off)>', ChannelHandler),
-                                  webapp2.Route('/<role:(presenter)|(audience)>/<pdf_name>', PDFPresentationHandler),
-                                  ('%s/([^/]+)?' % SERVE_BLOB_URI, ServePresentationHandler),
-                                  # ('/test', Test),
-                              ], debug=False)
+app = webapp2.WSGIApplication([('/about', About),
+                               ('/upload', UploadPresentationHandler),
+                               ('/', MainHandler),
+                               webapp2.Route('/channel/<action:(page)|(laser_on)|(laser_off)>', ChannelHandler),
+                               webapp2.Route('/<role:(presenter)|(audience)>/<pdf_name>', PDFPresentationHandler),
+                               ('%s/([^/]+)?' % SERVE_BLOB_URI, ServePresentationHandler),
+                               ], debug=False)

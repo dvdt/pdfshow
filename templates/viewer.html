@@ -134,12 +134,12 @@ limitations under the License.
 
             emit_page_change: function(page) {
                 if (this.engaged === true && this.role === 'presenter' && PDFView.previousPageNumber !== page) {
-                    var path = '/channel/page?p_key=' + this.presentation_key;
-                    path += '&p=' + page;
-                    path += '&client_id=' + this.client_id;
-                    var xhr = new XMLHttpRequest();
-                    xhr.open('POST', path, true);
-                    xhr.send();
+                    var postData = {
+                        "p_key": this.presentation_key,
+                        "p": page,
+                        "client_id": this.client_id
+                    };
+                    $.post('/channel/page', postData);
                 }
             },
 
