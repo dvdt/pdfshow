@@ -98,7 +98,8 @@ limitations under the License.
                     // Insert msg into it's proper (sorted) position
                     ChannelConn.addPageChangeMsg(msg);
                     var page = ChannelConn.getCurrentPage();
-                    if (ChannelConn.connected === true && ChannelConn.engaged === true && page !== PDFView.page) {
+                    if (ChannelConn.connected === true && ChannelConn.engaged === true && page !== PDFView.page &&
+                            ChannelConn.role == 'audience') {
                         PDFView.page = page;
                     }
                 }
