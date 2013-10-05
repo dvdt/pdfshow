@@ -94,7 +94,7 @@ class ChannelHandler(webapp2.RequestHandler):
     def post(self, action):
 
         client_id_source = self.request.get('client_id')
-        presentation_key = self.request.get('p_key')
+        presentation_key = urllib.unquote(self.request.get('p_key'))
         presentation = presentation_from_key(presentation_key)
 
         if action == 'page':
