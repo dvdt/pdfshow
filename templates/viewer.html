@@ -40,6 +40,7 @@ limitations under the License.
     <script type="text/javascript">
         // Do not allow find, text highlight
         PDFJS.disableTextLayer = true;
+
         var ChannelConn = {
             connected: false,
             engaged: true,
@@ -50,6 +51,10 @@ limitations under the License.
                 return this.msgs[this.msgs.length - 1].pageNum;
             },
 
+            /**
+             * Inserts the msg into the time-sorted msg array
+             * @param msg
+             */
             addPageChangeMsg: function (msg) {
                 var msgs = this.msgs;
                 msgs.push(msg);
@@ -69,40 +74,33 @@ limitations under the License.
                 socket.onerror = this.onError;
                 socket.onclose = this.onClose;
                 this.socket = socket;
+
+                window.addEventListener('pagechange', function pagechange(evt) {
+                    var page = evt.pageNumber;
+                    ChannelConn.emit_page_change(page);
+                    }, true)
             },
 
             onOpened: function() {
                 // Get the current change and update the view to that page
                 $.getJSON('/channel/page', {"p_key": ChannelConn.presentation_key}, function(msg) {
                     ChannelConn.addPageChangeMsg(msg); // update page stack
-                    PDFView.page = ChannelConn.getCurrentPage();
-                    window.addEventListener('pagechange', function pagechange(evt) {
-                        var page = evt.pageNumber;
-                        if (PDFView.previousPageNumber !== page) {
-                            if (ChannelConn.engaged == true)
-                                ChannelConn.emit_page_change(page);
-                            else {
-                                if (page == ChannelConn.getCurrentPage())
-                                    ChannelConn.engaged = true;
-                            }
-                        }
-                    }, true)
-
+                    PDFView.page = ChannelConn.getCurrentPage(); // set page
+                    ChannelConn.engaged = true;
+                    ChannelConn.connected = true;
                 });
-
-                ChannelConn.connected = true;
             },
 
             onMessage: function(raw_msg) {
                 console.log('Channel message received: ' + raw_msg.type);
                 var msg = jQuery.parseJSON(raw_msg.data);
                 if (msg.type === 'page') {
-                // Insert msg into it's proper (sorted) position
-                ChannelConn.addPageChangeMsg(msg);
-                var page = ChannelConn.getCurrentPage();
-                if (ChannelConn.connected === true && ChannelConn.engaged === true && page !== PDFView.page)
-                    ChannelConn.engaged = false;
-                PDFView.page = page;
+                    // Insert msg into it's proper (sorted) position
+                    ChannelConn.addPageChangeMsg(msg);
+                    var page = ChannelConn.getCurrentPage();
+                    if (ChannelConn.connected === true && ChannelConn.engaged === true && page !== PDFView.page) {
+                        PDFView.page = page;
+                    }
                 }
                 else if (msg.type === 'laser_on') {
                     // Only show laser if the page is visible on the audience side
@@ -132,8 +130,9 @@ limitations under the License.
                 window.alert('You have been disconnected')
                 this.connected = false;
             },
+
             emit_page_change: function(page) {
-                if (this.engaged === true && this.role === 'presenter') {
+                if (this.engaged === true && this.role === 'presenter' && PDFView.previousPageNumber !== page) {
                     var path = '/channel/page?p_key=' + this.presentation_key;
                     path += '&p=' + page;
                     path += '&client_id=' + this.client_id;
@@ -192,9 +191,6 @@ limitations under the License.
 
         window.addEventListener('documentload', function webViewerLoad(evt) {
             ChannelConn.initialize();
-//    $('#channelEngage').click(function(evt) {
-//
-//    });
         });
     </script>
 
