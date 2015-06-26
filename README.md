@@ -18,6 +18,6 @@ Use cases:
   forgotten the projector code. Or the ghost in the machine doesn't
   like you today. You give up and present your slides using pdfshow.
 
-Try it [pdfshow.appspot.com](here).
+Try it: http://pdfshow.appspot.com
 
 Built using PDF.js and Google App Engine's Channel API
