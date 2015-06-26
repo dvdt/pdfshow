@@ -2,16 +2,16 @@
 {% block title %}Index{% endblock %}
 {% block htmlbody %}
 <div class="jumbotron">
-    <h1>WebEx Presentations Suck.</h1>
-    <p class="lead">Screensharing takes too long to set up and the video quality is horrible. PDFshow is a snap to use and always looks great.</p>
-    <button type="button" data-toggle="modal" data-target="#gen-presentation-modal" class="btn btn-large btn-success">Try it for Free !</button>
+    <h2>Instantly broadcast your slide presentation over the internet</h2>
+    <p class="lead">Screensharing slides takes too long to set up and the video quality is horrible. PDFshow is a snap to use and always looks great.</p>
+    <button type="button" data-toggle="modal" data-target="#gen-presentation-modal" class="btn btn-large btn-success">Upload pdf presentation</button>
     <p class='lead'><em>It's the best way to present slides over the Internet</em></p>
 </div>
 <div id="gen-presentation-modal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
 <form autocomplete="off" id="gen-pres-form" action="{{ blob_upload_url }}" method="POST" enctype="multipart/form-data">
     <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-        <h3 id="myModalLabel">Upload Presentation</h3>
+        <h3 id="myModalLabel">Upload Presentation (step 1 of 2)</h3>
     </div>
     <div class="modal-body">
             <fieldset>
@@ -33,17 +33,45 @@
 <hr>
 <div class="row-fluid marketing">
     <div class="span6">
-        <h4>Instant, No-brainer Setup</h4>
+        <h4>No-brainer setup in under a minute</h4>
         <p>No download required! Just send the presentation link to conference attendees.</p>
-        <h4>Picture Perfect</h4>
+        <h4>Pixel Perfect</h4>
         <p>Unparalleled image quality. No more squinting at blurry charts and text.</p>
     </div>
     <div class="span6">
         <h4>Everyone is on the Same Page</h4>
         <p>Your colleagues' computers automatically refresh to show the current slide. We're all on the same slide.</p>
-        <h4>Completely Free</h4>
-        <p>No cost while PDFshow is in Beta.</p>
     </div>
+    <div class="span6">
+        <h4>Open source</h4>
+        <p><a href="https://github.com/dvdt/pdfshow">Fork it on github.</a></p>
+    </div>
+</div>
+
+<div class="row">
+  <h2>PDFshow solves these problems:</h2>
+<h4>"Wait wait, are you looking at figure 4 or figure 14?"</h4>
+<p>
+  You're presenting some slides at a meeting. Jim and Lauren are
+  calling in from a remote office. You upload your slides to PDFshow
+  and send everyone a PDFshow link. Now, everyone's view of the
+  content is automatically synchronized.
+</p>
+
+<h4>"Hang on Jim, let me put you on the big screen."</h4>
+<p>
+  You're giving a presentation via video conference. PDFshow
+  synchronizes the slide presentation. You use the big TV to see the
+  faces of people calling in by video conference.
+</p>
+
+<h4>"I give up trying to get this projector to work."</h4>
+<p>
+  You're about to give a presentation but forgot to bring the special
+  adapter that hooks your laptop up to the projector. Or you've
+  forgotten the projector code. Or the ghost in the machine doesn't
+  like you today. You give up and present your slides using PDFshow.
+</p>
 </div>
 {% endblock %}
 
